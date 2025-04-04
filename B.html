@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timeline Interattiva - Assemblaggio Finale</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #A0522D;
+      overflow: visible;
+      font-family: georgia;
+      color: #fff;
+    }
+    /* Contenitore per la timeline */
+    #timelineViewport {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100vw;
+      height: 100px;
+      transform: translateY(-50%);
+      overflow-x: auto;
+      overflow-y: visible;
+      scrollbar-width: none;
+    }
+    #timelineViewport::-webkit-scrollbar {
+      display: none;
+    }
+    #timelineContainer {
+      position: relative;
+      height: 10px;
+      background-color: rgba(0,0,0,0.2);
+      border-radius: 5px;
+      transition: width 0.5s;
+      width: 80%;
+      margin: auto;
+    }
+    /* Marker principali (zoom 1) */
+    .main-marker {
+      position: absolute;
+      top: -10px;
+      width: 10px;
+      height: 30px;
+      background-color: #000;
+      border-radius: 3.5px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 10px;
+      line-height: 70px;
+      transition: background-color 0.3s;
+    }
+    .main-marker:hover {
+      background-color: #FF6347;
+    }
+    /* Marker dettagliati (zoom 2) */
+    .detailed-marker {
+      position: absolute;
+      top: -5px;
+      width: 6px;
+      height: 20px;
+      background-color: #444;
+      border-radius: 2px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 8px;
+      line-height: 50px;
+      transition: background-color 0.3s;
+      display: none;
+    }
+    .detailed-marker:hover {
+      background-color: #FF6347;
+    }
+    /* Stili per il testo interno dei marker */
+    .main-marker-text {
+      position: absolute;
+      top: 150%;
+      right: -250%;
+      transform: translateY(-50%);
+      line-height: 1.2;
+      padding-right: 5px;
+    }
+    .detailed-marker-text {
+      position: absolute;
+      top: 150%;
+      right: -350%;
+      transform: translateY(-50%);
+      line-height: 1.2;
+      padding-right: 5px;
+      font-size: 8px;
+    }
+    /* Popup Mappa (zoom 3) */
+    #mapPopup {
+      position: fixed;
+      top: 70px;
+      left: 60px;
+      width: 70vw;
+      height: 70vh;
+      background-color: rgba(0,0,0,0.95);
+      display: none;
+      overflow: hidden;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    /* I pallini verranno creati dinamicamente */
+    .map-dot {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      transition: transform 0.3s;
+      border-radius: 50%;
+      border: 2px solid #fff;
+    }
+    .map-dot:hover {
+      transform: scale(1.2);
+    }
+    /* Dettagli evento (zoom 4) */
+    #detailsContainer {
+      position: fixed;
+      top: 70px;
+      left: 60px;
+      width: 70vw;
+      height: 70vh;
+      background-color: rgba(0,0,0,0.9);
+      display: none;
+      overflow-y: auto;
+      font-family: Helvetica;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .backBtn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background-color: #444;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Timeline View -->
+  <div id="timelineViewport">
+    <div id="timelineContainer">
+      <!-- Marker principali -->
+      <!-- Esempio di marker principale con testo gestito separatamente -->
+      <div class="main-marker" style="left: 50%;" data-label="Medioevo" data-era="medieval"
+        data-dots='[
+          {"left": "20%", "top": "30%", "text": "https://github.com/BoniniF/TimeLineCronicles/blob/fbd7341468018051ef53b19c3157c77513fdbddc/Scene%2010.pdf"},
+          {"left": "50%", "top": "40%", "text": "Dettaglio Moderno 2"},
+          {"left": "70%", "top": "55%", "text": "Dettaglio Moderno 3"}
+        ]'>
+        <span class="main-marker-text">1000 Medioevo</span>
+      </div>
+      <div class="main-marker" style="left: 90%;" data-label="Contemporaneità" data-era="modern"
+        data-dots='[
+          {"left": "30%", "top": "30%", "text": "Dettaglio Contemporaneo 1"},
+          {"left": "50%", "top": "40%", "text": "Dettaglio Contemporaneo 2"},
+          {"left": "70%", "top": "55%", "text": "Dettaglio Contemporaneo 3"}
+        ]'>
+        <span class="main-marker-text">Contemporaneità</span>
+      </div>
+      <div class="main-marker" style="left: 10%;" data-label="Preistoria" data-era="roman"
+        data-dots='[
+          {"left": "30%", "top": "30%", "text": "Dettaglio Preistorico 1"},
+          {"left": "50%", "top": "40%", "text": "Dettaglio Preistorico 2"},
+          {"left": "70%", "top": "55%", "text": "Dettaglio Preistorico 3"},
+          {"left": "70%", "top": "70%", "text": "Dettaglio Preistorico 4"}
+        ]'>
+        <span class="main-marker-text">Preistoria</span>
+      </div>
+      <!-- Marker dettagliati -->
+      <div class="detailed-marker" style="left: 80%;" data-label="Contemporaneità" data-era="modern"
+        data-dots='[
+          {"left": "20%", "top": "30%", "text": "Dettaglio Contemporaneo 1"},
+          {"left": "50%", "top": "40%", "text": "Dettaglio Contemporaneo 2"},
+          {"left": "70%", "top": "55%", "text": "Dettaglio Contemporaneo 3"}
+        ]'>
+        <span class="detailed-marker-text">evento</span>
+      </div>
+      <div class="detailed-marker" style="left: 20%;" data-label="Medioevo" data-era="medieval"
+        data-dots='[
+          {"left": "30%", "top": "30%", "text": "Dettaglio Medioevale 1"},
+          {"left": "50%", "top": "40%", "text": "Dettaglio Medioevale 2"},
+          {"left": "70%", "top": "55%", "text": "Dettaglio Medioevale 3"}
+        ]'>
+        <span class="detailed-marker-text">1200 a.C.<br>avvenimento</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup Mappa (zoom 3) -->
+  <div id="mapPopup"></div>
+
+  <!-- Container dei dettagli (zoom 4) -->
+  <div id="detailsContainer">
+    <div class="backBtn" id="backFromDetails">Indietro</div>
+    <div id="eventDetailsContent"></div>
+  </div>
+
+  <script>
+    // Stato attuale e livello di zoom della timeline
+    let currentView = "timeline";
+    let timelineZoomLevel = 1;
+    const zoomFactors = {1: 0.8, 2: 1.6};
+
+    const viewport = document.getElementById('timelineViewport');
+    const timeline = document.getElementById('timelineContainer');
+    const mainMarkers = document.querySelectorAll('.main-marker');
+    const detailedMarkers = document.querySelectorAll('.detailed-marker');
+
+    const mapPopup = document.getElementById('mapPopup');
+    const detailsContainer = document.getElementById('detailsContainer');
+    const backFromDetails = document.getElementById('backFromDetails');
+    const eventDetailsContent = document.getElementById('eventDetailsContent');
+
+    // Mappa degli sfondi per le varie ere
+    const eraBackgrounds = {
+      roman: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Karte_Pomponius_Mela_rotated.jpg",
+      medieval: "https://upload.wikimedia.org/wikipedia/commons/1/1b/FraMauroDetailedMap.jpg",
+      modern: "https://upload.wikimedia.org/wikipedia/commons/2/23/Blue_Marble_2002.png"
+    };
+
+    // Aggiornamento larghezza timeline e visualizzazione marker dettagliati
+    function updateTimelineWidth() {
+      const newWidth = window.innerWidth * zoomFactors[timelineZoomLevel];
+      timeline.style.width = newWidth + 'px';
+      detailedMarkers.forEach(marker => {
+        marker.style.display = (timelineZoomLevel === 2) ? 'block' : 'none';
+      });
+    }
+    updateTimelineWidth();
+
+    // Gestione del click sul viewport della timeline per zoom in/out
+    viewport.addEventListener('click', (event) => {
+      if (event.target.classList.contains('main-marker') || event.target.classList.contains('detailed-marker')) {
+        return;
+      }
+      const vpRect = viewport.getBoundingClientRect();
+      const clickX = event.clientX - vpRect.left + viewport.scrollLeft;
+      const oldWidth = timeline.offsetWidth;
+      const clickRatio = clickX / oldWidth;
+      timelineZoomLevel = (timelineZoomLevel === 1) ? 2 : 1;
+      updateTimelineWidth();
+      timeline.addEventListener('transitionend', function handler() {
+        const newWidth = timeline.offsetWidth;
+        const newClickX = clickRatio * newWidth;
+        const newScrollLeft = newClickX - (vpRect.width / 2);
+        viewport.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
+        timeline.removeEventListener('transitionend', handler);
+      });
+    });
+
+    // Funzione per creare i pallini in base ai dati del marker
+    function createMapDotsFromMarker(marker) {
+      // Pulizia del popup
+      mapPopup.innerHTML = "";
+      // Impostazione dello sfondo in base all'era
+      const era = marker.getAttribute('data-era');
+      if (era && eraBackgrounds[era]) {
+        mapPopup.style.backgroundImage = 'url("' + eraBackgrounds[era] + '")';
+      } else {
+        mapPopup.style.backgroundImage = 'none';
+      }
+      // Recupero dei dati dei pallini dal marker (formato JSON)
+      const dotsData = marker.getAttribute('data-dots');
+      if (!dotsData) return;
+      let dots;
+      try {
+        dots = JSON.parse(dotsData);
+      } catch (e) {
+        console.error("Errore nel parsing dei dati dei pallini", e);
+        return;
+      }
+      // Creazione dinamica dei pallini
+      dots.forEach(dotData => {
+        const dot = document.createElement('div');
+        dot.className = 'map-dot';
+        dot.style.left = dotData.left;
+        dot.style.top = dotData.top;
+        dot.setAttribute('data-event', dotData.text);
+        dot.addEventListener('click', (event) => {
+          event.stopPropagation();
+          currentView = "details";
+          // Se il testo termina con .pdf, carica il viewer PDF
+          if (dotData.text.trim().toLowerCase().endsWith('.pdf')) {
+            eventDetailsContent.innerHTML = '<iframe src="' + dotData.text + '" style="width:100%; height:100%;" frameborder="0"></iframe>';
+          } else {
+            eventDetailsContent.textContent = dotData.text;
+          }
+          detailsContainer.style.display = "block";
+          mapPopup.style.display = "none";
+        });
+        mapPopup.appendChild(dot);
+      });
+    }
+
+    // Gestione del click sul marker per aprire la mappa con i pallini specificati
+    function markerClickHandler(event) {
+      if (timelineZoomLevel !== 2) return;
+      event.stopPropagation();
+      const marker = event.currentTarget;
+      currentView = "map";
+      createMapDotsFromMarker(marker);
+      mapPopup.style.display = "block";
+      viewport.style.display = "none";
+      detailsContainer.style.display = "none";
+    }
+    mainMarkers.forEach(marker => {
+      marker.addEventListener('click', markerClickHandler);
+    });
+    detailedMarkers.forEach(marker => {
+      marker.addEventListener('click', markerClickHandler);
+    });
+
+    // Nella mappa: se si clicca fuori dai pallini, si torna alla timeline dettagliata
+    mapPopup.addEventListener('click', (event) => {
+      if (!event.target.classList.contains('map-dot')) {
+        currentView = "timeline";
+        mapPopup.style.display = "none";
+        viewport.style.display = "block";
+      }
+    });
+
+    // Gestione del pulsante "Indietro" nei dettagli
+    backFromDetails.addEventListener('click', () => {
+      currentView = "map";
+      detailsContainer.style.display = "none";
+      mapPopup.style.display = "block";
+    });
+
+    // Abilitazione dello scroll orizzontale con la rotellina del mouse nella timeline
+    viewport.addEventListener('wheel', (event) => {
+      viewport.scrollLeft += event.deltaY;
+    });
+  </script>
+</body>
+</html>
